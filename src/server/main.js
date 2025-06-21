@@ -7,17 +7,20 @@ import session from "express-session";
 import passport from "passport";
 import LocalStrategy from "passport-local";
 import bcrypt from "bcrypt";
-// import flash from "connect-flash";
+import flash from "connect-flash";
 
 dotenv.config();
 
 const PgSessionStore = PgSession(session);
 
 const app = express();
+app.set("view engine", "ejs");
+app.set("views", "src/server/views");
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/", express.static("public"));
-// app.use(flash());
+app.use(flash());
 app.use(
   session({
     store: new PgSessionStore({
@@ -38,21 +41,22 @@ app.use(passport.session());
 
 passport.use(
   new LocalStrategy(async (username, password, done) => {
-    console.log("LocalStrategy called", username, password);
     try {
       const user = await findUserByUsername(username);
-      console.log("A", user);
       if (!user) {
+        console.log("User not found, registering new user");
         const user = await registerUser(username, password);
-        console.log("B", user);
         return done(null, user);
       }
+      console.log("User found, checking password");
       const valid = await bcrypt.compare(password, user.password);
-      console.log("C", valid);
-      if (!valid)
+      if (!valid) {
+        console.log("Invalid password, authentication failed");
         return done(null, false, {
           message: "ユーザ名またはパスワードが間違っています",
         });
+      }
+      console.log("Password is valid, authentication successful");
       return done(null, user);
     } catch (err) {
       return done(err);
@@ -60,14 +64,11 @@ passport.use(
   })
 );
 passport.serializeUser((user, done) => {
-  console.log("serializeUser called", user);
   done(null, user.id);
 });
 passport.deserializeUser(async (id, done) => {
-  // console.log("deserializeUser called", id);
   try {
     const user = await findUserById(id);
-    // console.log("deserializeUser found user", user);
     done(null, user || false);
   } catch (err) {
     done(err);
@@ -80,12 +81,10 @@ const registerUser = async (username, password) => {
     "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *",
     [username, hashedPswd]
   );
-  console.log(res.rows[0]);
   return res.rows[0];
 };
 
 const findUserByUsername = async (username) => {
-  console.log("findUserByUsername called", username);
   const res = await pool.query("SELECT * FROM users WHERE username = $1", [
     username,
   ]);
@@ -113,23 +112,31 @@ app.use((req, res, next) => {
   }
   res.redirect("/401.html");
 });
+app.get("/", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.redirect("/hello");
+  } else {
+    res.render("login", { error: req.flash("error") });
+  }
+});
+app.get("/hello", (req, res) => {
+  res.render("hello", {});
+});
 
-// app.post("/login", passport.authenticate("local"), (req, res) => {
-//   res.send("ログイン成功");
-// });
 app.post(
   "/login",
   passport.authenticate("local", {
-    successRedirect: "/hello.html",
+    successRedirect: "/hello",
     failureRedirect: "/",
-    // failureFlash: true,
+    failureFlash: true,
   })
 );
-
-// app.get("/hello", (req, res) => {
-//   console.log("Hello route called", req.user);
-//   res.send("Hello Vite!");
-// });
+app.post("/logout", (req, res) => {
+  req.logout((err) => {
+    if (err) return res.status(500).send("Logout failed");
+    res.sendStatus(200);
+  });
+});
 
 ViteExpress.listen(app, process.env.APP_PORT, () =>
   console.log(`Server is listening on port ${process.env.APP_PORT}...`)

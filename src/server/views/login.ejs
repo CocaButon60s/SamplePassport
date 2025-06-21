@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ログイン</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background: #f5f5f5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .login-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 350px;
+      }
+      input {
+        width: 100%;
+        padding: 0.5rem;
+        margin-top: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      button {
+        width: 100%;
+        padding: 0.5rem;
+        margin-top: 1rem;
+        background-color: #1976d2;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #1565c0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <h2>ログイン</h2>
+      <% if (error) { %>
+      <div style="color: red"><%= error %></div>
+      <% } %>
+      <form id="loginForm" action="/login" method="POST">
+        <input
+          type="text"
+          id="username"
+          placeholder="ユーザー名"
+          name="username"
+          required
+        />
+        <input
+          type="password"
+          id="password"
+          placeholder="パスワード"
+          name="password"
+          required
+        />
+        <button type="submit">ログイン</button>
+      </form>
+    </div>
+  </body>
+</html>

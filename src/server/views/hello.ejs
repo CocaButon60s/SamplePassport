@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>hello vite!</h1>
+    <button id="logoutButton">ログアウト</button>
+    <script>
+      document
+        .getElementById("logoutButton")
+        .addEventListener("click", function () {
+          fetch("/logout", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
+            .then((response) => {
+              if (response.ok) {
+                console.log("ログアウト成功");
+                window.location.href = "/";
+              } else {
+                alert("ログアウトに失敗しました。");
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+            });
+        });
+    </script>
+  </body>
+</html>
