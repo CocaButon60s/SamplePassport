@@ -7,6 +7,7 @@ import session from "express-session";
 import passport from "passport";
 import LocalStrategy from "passport-local";
 import bcrypt from "bcrypt";
+// import flash from "connect-flash";
 
 dotenv.config();
 
@@ -15,14 +16,19 @@ const PgSessionStore = PgSession(session);
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/", express.static("public"));
+// app.use(flash());
 app.use(
   session({
-    store: new PgSessionStore({ pool }),
+    store: new PgSessionStore({
+      pool: pool,
+      createTableIfMissing: true, // Automatically create the session table if it doesn't exist
+    }),
     secret: process.env.SES_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      //   maxAge: 1000 * 60 * 60 * 24, // 1 day
       httpOnly: true,
     },
   })
@@ -54,11 +60,14 @@ passport.use(
   })
 );
 passport.serializeUser((user, done) => {
+  console.log("serializeUser called", user);
   done(null, user.id);
 });
 passport.deserializeUser(async (id, done) => {
+  // console.log("deserializeUser called", id);
   try {
     const user = await findUserById(id);
+    // console.log("deserializeUser found user", user);
     done(null, user || false);
   } catch (err) {
     done(err);
@@ -66,15 +75,17 @@ passport.deserializeUser(async (id, done) => {
 });
 
 const registerUser = async (username, password) => {
+  const hashedPswd = await bcrypt.hash(password, 10);
   const res = await pool.query(
     "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *",
-    [username, password]
+    [username, hashedPswd]
   );
   console.log(res.rows[0]);
   return res.rows[0];
 };
 
 const findUserByUsername = async (username) => {
+  console.log("findUserByUsername called", username);
   const res = await pool.query("SELECT * FROM users WHERE username = $1", [
     username,
   ]);
@@ -100,7 +111,7 @@ app.use((req, res, next) => {
   if (req.isAuthenticated()) {
     return next();
   }
-  res.status(401).send("認証されていません");
+  res.redirect("/401.html");
 });
 
 // app.post("/login", passport.authenticate("local"), (req, res) => {
@@ -109,14 +120,16 @@ app.use((req, res, next) => {
 app.post(
   "/login",
   passport.authenticate("local", {
-    successRedirect: "/hello",
+    successRedirect: "/hello.html",
     failureRedirect: "/",
+    // failureFlash: true,
   })
 );
 
-app.get("/hello", (req, res) => {
-  res.send("Hello Vite!");
-});
+// app.get("/hello", (req, res) => {
+//   console.log("Hello route called", req.user);
+//   res.send("Hello Vite!");
+// });
 
 ViteExpress.listen(app, process.env.APP_PORT, () =>
   console.log(`Server is listening on port ${process.env.APP_PORT}...`)

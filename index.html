@@ -45,30 +45,11 @@
 <body>
   <div class="login-container">
     <h2>ログイン</h2>
-    <form id="loginForm">
-      <input type="text" id="username" placeholder="ユーザー名" required />
-      <input type="password" id="password" placeholder="パスワード" required />
+    <form id="loginForm" action="/login" method="POST">
+      <input type="text" id="username" placeholder="ユーザー名" name="username" required />
+      <input type="password" id="password" placeholder="パスワード" name="password" required />
       <button type="submit">ログイン</button>
     </form>
   </div>
-
-  <script>
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-
-      const res = await fetch('/login',{
-        method:'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({username:username,password:password})
-      })
-      console.log(res);
-      console.log(res.text);
-      console.log(res.message);
-    });
-  </script>
 </body>
 </html>
